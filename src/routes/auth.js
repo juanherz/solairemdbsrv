@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -14,7 +15,7 @@ router.post('/register', async (req, res) => {
     const user = new User({ displayName, email, password, role });
     await user.save();
 
-    const accessToken = jwt.sign({ userId: user._id }, 'MY_SECRET_KEY', { expiresIn: '7d' });
+    const accessToken = jwt.sign({ userId: user._id }, `${process.env.MONGODB_SECRET_KEY}`, { expiresIn: '7d' });
     res.status(201).json({ accessToken, user });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -36,7 +37,7 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: 'Invalid credentials' });
 
-    const accessToken = jwt.sign({ userId: user._id }, 'MY_SECRET_KEY', { expiresIn: '7d' });
+    const accessToken = jwt.sign({ userId: user._id }, `${process.env.MONGODB_SECRET_KEY}`, { expiresIn: '7d' });
 
     res.json({ accessToken, user });
   } catch (err) {

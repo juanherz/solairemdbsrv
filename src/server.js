@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -8,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const mongoUri = "mongodb+srv://solaire:solaire1@cluster0.syokry5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const mongoUri = `${process.env.MONGODB_CONNECT_URI}`;
 if (!mongoUri) {
   throw new Error(
     `MongoURI was not supplied.`
@@ -26,5 +27,5 @@ const authRoutes = require("./routes/auth");
 app.use('/api/account',authRoutes);
 
 app.listen(5000, () => {
-  console.log("Listening on port 5000");
+  console.log(`Listening on port ${process.env.PORT || 5000}`);
 });
