@@ -253,5 +253,30 @@ router.get('/user/:id', requireAuth, checkRole(['admin']), async (req, res) => {
   }
 });
 
+// Route to change user password by ID
+router.put('/change-password/:id', requireAuth, checkRole(['admin']), async (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ msg: 'Password is required' });
+  }
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    user.password = password;
+
+    await user.save();
+    res.json({ msg: 'Password updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 module.exports = router;
