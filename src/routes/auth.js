@@ -55,7 +55,7 @@ router.get('/my-account', requireAuth, async (req, res) => {
       displayName: user.displayName,
       email: user.email,
       password: user.password,
-      photoURL: user.photoURL || 'https://minimal-assets-api.vercel.app/assets/images/avatars/avatar_default.jpg',
+      photoURL: user.photoURL || '',
       phoneNumber: user.phoneNumber || '',
       country: user.country || '',
       address: user.address || '',
@@ -65,7 +65,7 @@ router.get('/my-account', requireAuth, async (req, res) => {
       about: user.about || '',
       role: user.role || '',
       isPublic: user.isPublic || false,
-      isVerified: user.isVerified,
+      isVerified: user.isVerified || false,
       status: user.status,
       company: user.company,
     };
