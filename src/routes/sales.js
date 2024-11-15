@@ -141,6 +141,13 @@ router.post('/:id/payments', requireAuth, checkRole(['admin', 'user']), async (r
   
       const { date, amount, comments } = req.body;
   
+      // Calculate potential new amountPaid
+      const newAmountPaid = sale.amountPaid + amount;
+  
+      if (newAmountPaid > sale.totalAmount) {
+        return res.status(400).json({ msg: 'El monto del pago excede el monto adeudado.' });
+      }
+  
       sale.payments.push({ date, amount, comments });
   
       // After adding the payment, recalculate the status
@@ -157,11 +164,11 @@ router.post('/:id/payments', requireAuth, checkRole(['admin', 'user']), async (r
   
       await sale.save();
   
-      res.json({ msg: 'Payment recorded successfully', sale });
+      res.json({ msg: 'Pago registrado exitosamente', sale });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
-});
+  });
 
 // Get sales by customer name
 router.get('/customer/:customerName', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
@@ -172,5 +179,41 @@ router.get('/customer/:customerName', requireAuth, checkRole(['admin', 'user']),
     res.status(500).json({ error: err.message });
   }
 });
+
+// Delete a payment from a sale
+router.delete('/:id/payments/:paymentId', requireAuth, checkRole(['admin']), async (req, res) => {
+    try {
+      const sale = await Sale.findById(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ msg: 'Sale not found' });
+      }
+  
+      const paymentIndex = sale.payments.findIndex((p) => p._id.toString() === req.params.paymentId);
+      if (paymentIndex === -1) {
+        return res.status(404).json({ msg: 'Payment not found' });
+      }
+  
+      sale.payments.splice(paymentIndex, 1);
+  
+      // Recalculate amountPaid, amountOwed, and status
+      const amountPaid = sale.payments.reduce((total, payment) => total + payment.amount, 0);
+      const amountOwed = sale.totalAmount - amountPaid;
+  
+      if (amountOwed <= 0) {
+        sale.status = 'Pagado';
+      } else if (amountOwed < sale.totalAmount) {
+        sale.status = 'Parcial';
+      } else {
+        sale.status = 'No Pagado';
+      }
+  
+      await sale.save();
+  
+      res.json({ msg: 'Pago eliminado exitosamente', sale });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
 
 module.exports = router;
