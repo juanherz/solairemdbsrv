@@ -7,45 +7,45 @@ const checkRole = require('../middlewares/checkRole');
 
 // Create a new sale
 router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
-  try {
-    const {
-      customerName,
-      customerPhone,
-      saleNumber,
-      saleDate,
-      items,
-      saleType,
-      national,
-      currency,
-      comments,
-      location,
-    } = req.body;
+    try {
+        const {
+        customerName,
+        customerPhone,
+        saleNumber,
+        saleDate,
+        items,
+        saleType,
+        national,
+        currency,
+        comments,
+        location,
+        } = req.body;
 
-    // Calculate total amount
-    const totalAmount = items.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
+        // Calculate total amount
+        const totalAmount = items.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
 
-    const sale = new Sale({
-      customerName,
-      customerPhone,
-      saleNumber,
-      saleDate,
-      items,
-      totalAmount,
-      status: saleType === 'Contado' ? 'Pagado' : 'No Pagado',
-      saleType,
-      national,
-      currency,
-      comments,
-      location,
-      createdBy: req.user._id,
-      payments: saleType === 'Contado' ? [{ date: saleDate, amount: totalAmount, comments: 'Pagado en efectivo' }] : [],
-    });
+        const sale = new Sale({
+        customerName,
+        customerPhone,
+        saleNumber,
+        saleDate,
+        items,
+        totalAmount,
+        status: saleType === 'Contado' ? 'Pagado' : 'No Pagado',
+        saleType,
+        national,
+        currency,
+        comments,
+        location,
+        createdBy: req.user._id,
+        payments: saleType === 'Contado' ? [{ date: saleDate, amount: totalAmount, comments: 'Pagado en efectivo' }] : [],
+        });
 
-    await sale.save();
-    res.status(201).json({ msg: 'Venta creada exitosamente', sale });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+        await sale.save();
+        res.status(201).json({ msg: 'Venta creada exitosamente', sale });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Get all sales
@@ -133,21 +133,34 @@ router.delete('/:id', requireAuth, checkRole(['admin']), async (req, res) => {
 
 // Record a payment on a sale
 router.post('/:id/payments', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
-  try {
-    const sale = await Sale.findById(req.params.id);
-    if (!sale) {
-      return res.status(404).json({ msg: 'Sale not found' });
+    try {
+      const sale = await Sale.findById(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ msg: 'Sale not found' });
+      }
+  
+      const { date, amount, comments } = req.body;
+  
+      sale.payments.push({ date, amount, comments });
+  
+      // After adding the payment, recalculate the status
+      const amountPaid = sale.payments.reduce((total, payment) => total + payment.amount, 0);
+      const amountOwed = sale.totalAmount - amountPaid;
+  
+      if (amountOwed <= 0) {
+        sale.status = 'Pagado';
+      } else if (amountOwed < sale.totalAmount) {
+        sale.status = 'Parcial';
+      } else {
+        sale.status = 'No Pagado';
+      }
+  
+      await sale.save();
+  
+      res.json({ msg: 'Payment recorded successfully', sale });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-
-    const { date, amount, comments } = req.body;
-
-    sale.payments.push({ date, amount, comments });
-    await sale.save();
-
-    res.json({ msg: 'Payment recorded successfully', sale });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
 // Get sales by customer name
