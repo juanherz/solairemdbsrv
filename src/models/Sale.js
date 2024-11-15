@@ -21,8 +21,8 @@ const SaleSchema = new mongoose.Schema({
   recordedDate: { type: Date, default: Date.now }, // When it was recorded on the page
   items: [SaleItemSchema],
   totalAmount: { type: Number, required: true },
-  status: { type: String, enum: ['paid', 'unpaid', 'partial'], default: 'unpaid' },
-  saleType: { type: String, enum: ['cash', 'credit'], default: 'credit' }, // Cash or Credit
+  status: { type: String, enum: ['Pagado', 'No Pagado', 'Parcial'], default: 'No Pagado' },
+  saleType: { type: String, enum: ['Contado', 'Crédito'], default: 'Crédito' }, // Cash or Credit
   national: { type: Boolean, required: true }, // True for national, false for international
   currency: { type: String, enum: ['USD', 'MXN'], required: true }, // Only USD or MXN
   comments: String, // Comments when creating sales or when payments are made
