@@ -24,7 +24,7 @@ const SaleSchema = new mongoose.Schema({
   status: { type: String, enum: ['paid', 'unpaid', 'partial'], default: 'unpaid' },
   saleType: { type: String, enum: ['cash', 'credit'], default: 'credit' }, // Cash or Credit
   national: { type: Boolean, required: true }, // True for national, false for international
-  currency: { type: String, required: true },
+  currency: { type: String, enum: ['USD', 'MXN'], required: true }, // Only USD or MXN
   comments: String, // Comments when creating sales or when payments are made
   location: String, // Location where the sale happened
   payments: [PaymentSchema], // Payments made against credit sales
