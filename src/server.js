@@ -26,6 +26,9 @@ mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
 const authRoutes = require("./routes/auth");
 app.use('/api/account',authRoutes);
 
+const salesRoutes = require('./routes/sales');
+app.use('/api/sales', salesRoutes);
+
 app.listen(5000, () => {
   console.log(`Listening on port ${process.env.PORT || 5000}`);
 });
