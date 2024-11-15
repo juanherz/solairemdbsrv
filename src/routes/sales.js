@@ -31,18 +31,18 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
       saleDate,
       items,
       totalAmount,
-      status: saleType === 'cash' ? 'paid' : 'unpaid',
+      status: saleType === 'Contado' ? 'Pagado' : 'No Pagado',
       saleType,
       national,
       currency,
       comments,
       location,
       createdBy: req.user._id,
-      payments: saleType === 'cash' ? [{ date: saleDate, amount: totalAmount, comments: 'Paid in cash' }] : [],
+      payments: saleType === 'Contado' ? [{ date: saleDate, amount: totalAmount, comments: 'Pagado en efectivo' }] : [],
     });
 
     await sale.save();
-    res.status(201).json({ msg: 'Sale created successfully', sale });
+    res.status(201).json({ msg: 'Venta creada exitosamente', sale });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -63,7 +63,7 @@ router.get('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
   try {
     const sale = await Sale.findById(req.params.id).populate('createdBy', 'displayName email');
     if (!sale) {
-      return res.status(404).json({ msg: 'Sale not found' });
+      return res.status(404).json({ msg: 'Venta no encontrada' });
     }
     res.json(sale);
   } catch (err) {
