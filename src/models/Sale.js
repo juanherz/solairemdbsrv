@@ -15,8 +15,9 @@ const SaleItemSchema = new mongoose.Schema({
 
 const SaleSchema = new mongoose.Schema(
   {
-    customerName: { type: String, required: true },
-    customerPhone: { type: String },
+    // customerName: { type: String, required: true },
+    // customerPhone: { type: String },
+    client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
     saleNumber: { type: String, required: true, unique: true },
     saleDate: { type: Date, required: true },
     recordedDate: { type: Date, default: Date.now },
