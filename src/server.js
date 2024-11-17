@@ -32,6 +32,8 @@ app.use('/api/sales', salesRoutes);
 const clientsRoutes = require('./routes/clients');
 app.use('/api/clients', clientsRoutes);
 
-app.listen(5000, () => {
-  console.log(`Listening on port ${process.env.PORT || 5000}`);
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}`);
 });
