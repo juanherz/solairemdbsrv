@@ -54,7 +54,8 @@ router.get('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
     const sales = await Sale.find()
       .populate('createdBy', 'displayName email')
-      .populate('client', 'name phone email');
+      .populate('client', 'name phone email')
+      .populate('items.product', 'name characteristics unit'); // Populate product
     res.json(sales);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -7,10 +7,17 @@ const PaymentSchema = new mongoose.Schema({
   comments: String,
 });
 
+// const SaleItemSchema = new mongoose.Schema({
+//   description: { type: String, required: true },
+//   quantity: { type: Number, required: true },
+//   unitPrice: { type: Number, required: true },
+// });
+
 const SaleItemSchema = new mongoose.Schema({
-  description: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  unitPrice: { type: Number, required: true },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  description: String,
+  quantity: Number,
+  unitPrice: Number,
 });
 
 const SaleSchema = new mongoose.Schema(

@@ -1,4 +1,6 @@
-require('dotenv').config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
@@ -31,6 +33,9 @@ app.use('/api/sales', salesRoutes);
 
 const clientsRoutes = require('./routes/clients');
 app.use('/api/clients', clientsRoutes);
+
+const productsRoutes = require('./routes/products');
+app.use('/api/products', productsRoutes);
 
 const PORT = process.env.PORT || 3000;
 
