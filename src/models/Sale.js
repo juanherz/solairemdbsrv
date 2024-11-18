@@ -7,12 +7,6 @@ const PaymentSchema = new mongoose.Schema({
   comments: String,
 });
 
-// const SaleItemSchema = new mongoose.Schema({
-//   description: { type: String, required: true },
-//   quantity: { type: Number, required: true },
-//   unitPrice: { type: Number, required: true },
-// });
-
 const SaleItemSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   description: String,
@@ -22,8 +16,6 @@ const SaleItemSchema = new mongoose.Schema({
 
 const SaleSchema = new mongoose.Schema(
   {
-    // customerName: { type: String, required: true },
-    // customerPhone: { type: String },
     client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
     saleNumber: { type: String, required: true, unique: true },
     saleDate: { type: Date, required: true },
@@ -31,6 +23,7 @@ const SaleSchema = new mongoose.Schema(
     items: [SaleItemSchema],
     totalAmount: { type: Number, required: true },
     status: { type: String, enum: ['Pagado', 'No Pagado', 'Parcial'], default: 'No Pagado' },
+    order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' }, 
     saleType: { type: String, enum: ['Contado', 'Crédito'], default: 'Crédito' },
     national: { type: Boolean, required: true },
     currency: { type: String, enum: ['USD', 'MXN'], required: true },

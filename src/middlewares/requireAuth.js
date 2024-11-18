@@ -1,3 +1,5 @@
+// src/middlewares/requireAuth.js
+
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');

@@ -1,3 +1,5 @@
+// src/middlewares/checkRole.js
+
 module.exports = (roles) => {
     return (req, res, next) => {
       if (!roles.includes(req.user.role)) {
