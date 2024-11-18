@@ -9,7 +9,7 @@ const checkRole = require('../middlewares/checkRole');
 router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
     const {
-      client, // Expecting client ID
+      client,
       saleNumber,
       saleDate,
       items,
@@ -18,6 +18,7 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
       currency,
       comments,
       location,
+      order, // Optional order ID
     } = req.body;
 
     // Calculate total amount
@@ -40,15 +41,26 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
         saleType === 'Contado'
           ? [{ date: saleDate, amount: totalAmount, comments: 'Pagado en efectivo' }]
           : [],
+      order, // Link to the order if provided
     });
 
     await sale.save();
+
+    // If an order is linked, update the order's status and link the sale
+    if (order) {
+      const orderToUpdate = await Order.findById(order);
+      if (orderToUpdate) {
+        orderToUpdate.status = 'Completado';
+        orderToUpdate.sale = sale._id;
+        await orderToUpdate.save();
+      }
+    }
+
     res.status(201).json({ msg: 'Venta creada exitosamente', sale });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 // Get all sales
 router.get('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
