@@ -178,7 +178,7 @@ router.post('/:id/create-sale', requireAuth, checkRole(['admin', 'user']), async
 
     // Update the order to link it to the sale
     order.sale = sale._id;
-    order.status = 'Completed'; // Mark the order as completed
+    order.status = 'Completado'; // Mark the order as completed
     await order.save();
 
     res.status(201).json({ msg: 'Venta creada exitosamente a partir del pedido', sale });
