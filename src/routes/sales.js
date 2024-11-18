@@ -1,7 +1,7 @@
-// src/routes/sales.js
 const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
+const Order = require('../models/Order'); // Added import
 const requireAuth = require('../middlewares/requireAuth');
 const checkRole = require('../middlewares/checkRole');
 
@@ -48,31 +48,25 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
 
     // If an order is linked, update the order's status and link the sale
     if (order) {
-      const orderToUpdate = await Order.findById(order);
+      console.log('Order ID received:', order);
+      const orderId = typeof order === 'object' && order._id ? order._id : order;
+      const orderToUpdate = await Order.findById(orderId);
       if (orderToUpdate) {
         orderToUpdate.status = 'Completado';
         orderToUpdate.sale = sale._id;
         await orderToUpdate.save();
+      } else {
+        console.warn('Order not found with ID:', orderId);
       }
     }
 
     res.status(201).json({ msg: 'Venta creada exitosamente', sale });
   } catch (err) {
+    console.error('Error creating sale:', err);
     res.status(500).json({ error: err.message });
   }
 });
-// Get all sales
-router.get('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
-  try {
-    const sales = await Sale.find()
-      .populate('createdBy', 'displayName email')
-      .populate('client', 'name phone email')
-      .populate('items.product', 'name characteristics unit'); // Populate product
-    res.json(sales);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
 
 // Get sales by client ID
 router.get('/client/:clientId', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
