@@ -47,17 +47,25 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
 
     await sale.save();
 
-    // If an order is linked, update the order's status and link the sale
+    // If an order is linked, update the order's status, sale link, and data
     if (order) {
-      console.log('Order ID received:', order);
-      const orderId = typeof order === 'object' && order._id ? order._id : order;
-      const orderToUpdate = await Order.findById(orderId);
+      const orderToUpdate = await Order.findById(order);
       if (orderToUpdate) {
+        // Update the order's items to match the sale's items
+        orderToUpdate.items = items.map((item) => ({
+          product: item.product,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        }));
+
+        // Update other fields as necessary
+        orderToUpdate.negotiatedPrice = totalAmount;
+        orderToUpdate.currency = currency;
         orderToUpdate.status = 'Completado';
         orderToUpdate.sale = sale._id;
+
         await orderToUpdate.save();
-      } else {
-        console.warn('Order not found with ID:', orderId);
       }
     }
 

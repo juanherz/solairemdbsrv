@@ -3,11 +3,17 @@
 const mongoose = require('mongoose');
 const moment = require('moment'); // Ensure moment is installed
 
+const OrderItemSchema = new mongoose.Schema({
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  description: String,
+  quantity: Number,
+  unitPrice: Number,
+});
+
 const OrderSchema = new mongoose.Schema(
   {
     client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
-    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    quantity: { type: Number, required: true },
+    items: [OrderItemSchema], // Modified to include items array
     location: { type: String },
     deliveryDate: { type: Date, required: true, index: true }, // Added index here
     comments: { type: String },
@@ -17,7 +23,6 @@ const OrderSchema = new mongoose.Schema(
     sale: { type: mongoose.Schema.Types.ObjectId, ref: 'Sale' },
 
     // Fields for Income Prediction
-    negotiatedPrice: { type: Number, required: true },
     currency: { type: String, enum: ['USD', 'MXN'], required: true },
   },
   {
@@ -37,7 +42,9 @@ OrderSchema.virtual('weekNumber').get(function () {
   }
 });
 
-// Ensure moment is installed in your project
-// npm install moment
+OrderSchema.virtual('negotiatedPrice').get(function () {
+    return this.items.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
+  });
+
 
 module.exports = mongoose.model('Order', OrderSchema);
