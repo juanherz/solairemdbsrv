@@ -1,7 +1,8 @@
+// src/routes/sales.js
 const express = require('express');
 const router = express.Router();
 const Sale = require('../models/Sale');
-const Order = require('../models/Order'); // Added import
+const Order = require('../models/Order'); // Import the Order model
 const requireAuth = require('../middlewares/requireAuth');
 const checkRole = require('../middlewares/checkRole');
 
@@ -67,6 +68,18 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
   }
 });
 
+// Get all sales
+router.get('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
+  try {
+    const sales = await Sale.find()
+      .populate('createdBy', 'displayName email')
+      .populate('client', 'name phone email')
+      .populate('items.product', 'name characteristics unit'); // Populate product
+    res.json(sales);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Get sales by client ID
 router.get('/client/:clientId', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
