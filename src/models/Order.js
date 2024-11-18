@@ -11,8 +11,8 @@ const OrderSchema = new mongoose.Schema(
     location: { type: String },
     deliveryDate: { type: Date, required: true, index: true }, // Added index here
     comments: { type: String },
-    priority: { type: String, enum: ['High', 'Medium', 'Low'], default: 'Medium' },
-    status: { type: String, enum: ['Pending', 'Discarded', 'Completed'], default: 'Pending' },
+    priority: { type: String, enum: ['Alta', 'Media', 'Baja'], default: 'Media' },
+    status: { type: String, enum: ['Pendiente', 'Descartado', 'Completado'], default: 'Pendiente' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     sale: { type: mongoose.Schema.Types.ObjectId, ref: 'Sale' },
 
