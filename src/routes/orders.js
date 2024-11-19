@@ -5,33 +5,28 @@ const router = express.Router();
 const Order = require('../models/Order');
 const requireAuth = require('../middlewares/requireAuth');
 const checkRole = require('../middlewares/checkRole');
-// Missing import for Sale model
-const Sale = require('../models/Sale'); // Add this line
+const Sale = require('../models/Sale'); // Ensure Sale model is imported
 
 // Create a new order
 router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
     const {
       client,
-      product,
-      quantity,
+      items,
       location,
       deliveryDate,
       comments,
       priority,
-      negotiatedPrice,
       currency,
     } = req.body;
 
     const order = new Order({
       client,
-      product,
-      quantity,
+      items,
       location,
       deliveryDate,
       comments,
       priority,
-      negotiatedPrice,
       currency,
       createdBy: req.user._id,
     });
@@ -48,7 +43,7 @@ router.get('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('client', 'name phone email')
-      .populate('product', 'name characteristics unit')
+      .populate('items.product', 'name characteristics unit')
       .populate('createdBy', 'displayName email')
       .sort({ createdAt: -1 });
 
@@ -63,7 +58,7 @@ router.get('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
   try {
     const order = await Order.findById(req.params.id)
       .populate('client', 'name phone email')
-      .populate('product', 'name characteristics unit')
+      .populate('items.product', 'name characteristics unit')
       .populate('createdBy', 'displayName email');
 
     if (!order) {
@@ -81,14 +76,12 @@ router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
   try {
     const {
       client,
-      product,
-      quantity,
+      items,
       location,
       deliveryDate,
       comments,
       priority,
       status,
-      negotiatedPrice,
       currency,
     } = req.body;
 
@@ -96,14 +89,12 @@ router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
       req.params.id,
       {
         client,
-        product,
-        quantity,
+        items,
         location,
         deliveryDate,
         comments,
         priority,
         status,
-        negotiatedPrice,
         currency,
       },
       { new: true }
@@ -119,27 +110,12 @@ router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
   }
 });
 
-// Delete an order
-router.delete('/:id', requireAuth, checkRole(['admin']), async (req, res) => {
-  try {
-    const order = await Order.findByIdAndDelete(req.params.id);
-
-    if (!order) {
-      return res.status(404).json({ msg: 'Pedido no encontrado' });
-    }
-
-    res.json({ msg: 'Pedido eliminado exitosamente' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Create a sale from an order
 router.post('/:id/create-sale', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('client')
-      .populate('product');
+      .populate('items.product');
 
     if (!order) {
       return res.status(404).json({ msg: 'Pedido no encontrado' });
@@ -151,34 +127,36 @@ router.post('/:id/create-sale', requireAuth, checkRole(['admin', 'user']), async
     }
 
     // Create a new sale using the order details
+    const saleItems = order.items.map((item) => ({
+      product: item.product._id,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    }));
+
+    const totalAmount = saleItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
+
     const sale = new Sale({
       client: order.client._id,
       saleNumber: `VENTA-${Date.now()}`,
       saleDate: new Date(),
-      items: [
-        {
-          product: order.product._id,
-          description: order.product.name,
-          quantity: order.quantity,
-          unitPrice: order.negotiatedPrice / order.quantity, // Adjusted to use negotiatedPrice
-        },
-      ],
-      totalAmount: order.negotiatedPrice, // Adjusted to use negotiatedPrice
+      items: saleItems,
+      totalAmount,
       status: 'No Pagado',
-      saleType: 'Crédito', // Default or based on your requirements
-      national: true, // Default or based on your requirements
-      currency: order.currency, // Use currency from the order
+      saleType: 'Crédito', // Adjust as needed
+      national: true, // Adjust as needed
+      currency: order.currency,
       comments: order.comments,
       location: order.location,
       createdBy: req.user._id,
-      order: order._id, // Link to the order
+      order: order._id,
     });
 
     await sale.save();
 
     // Update the order to link it to the sale
     order.sale = sale._id;
-    order.status = 'Completado'; // Mark the order as completed
+    order.status = 'Completado';
     await order.save();
 
     res.status(201).json({ msg: 'Venta creada exitosamente a partir del pedido', sale });
@@ -186,5 +164,22 @@ router.post('/:id/create-sale', requireAuth, checkRole(['admin', 'user']), async
     res.status(500).json({ error: err.message });
   }
 });
+
+
+// Delete an order
+router.delete('/:id', requireAuth, checkRole(['admin']), async (req, res) => {
+    try {
+      const order = await Order.findByIdAndDelete(req.params.id);
+  
+      if (!order) {
+        return res.status(404).json({ msg: 'Pedido no encontrado' });
+      }
+  
+      res.json({ msg: 'Pedido eliminado exitosamente' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+  
 
 module.exports = router;
