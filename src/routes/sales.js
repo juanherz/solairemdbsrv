@@ -47,23 +47,19 @@ router.post('/', requireAuth, checkRole(['admin', 'user']), async (req, res) => 
 
     await sale.save();
 
-    // If an order is linked, update the order's status, sale link, and data
+    // If an order is linked, update the order's status, sale link, and fulfillment status
     if (order) {
-      const orderToUpdate = await Order.findById(order);
+      const orderToUpdate = await Order.findById(order).populate('items.product');
       if (orderToUpdate) {
-        // Update the order's items to match the sale's items
-        orderToUpdate.items = items.map((item) => ({
-          product: item.product,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        }));
+        // Do not overwrite the order's items
 
-        // Update other fields as necessary
-        orderToUpdate.negotiatedPrice = totalAmount;
-        orderToUpdate.currency = currency;
+        // Update order's status and link to the sale
         orderToUpdate.status = 'Completado';
         orderToUpdate.sale = sale._id;
+
+        // Determine fulfillment status
+        const fulfillmentStatus = determineFulfillmentStatus(orderToUpdate.items, sale.items);
+        orderToUpdate.fulfillmentStatus = fulfillmentStatus; // 'Completo' or 'Parcial'
 
         await orderToUpdate.save();
       }
@@ -116,6 +112,7 @@ router.get('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
   }
 });
 
+
 // Update a sale
 router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
   try {
@@ -134,25 +131,35 @@ router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
     // Calculate total amount
     const totalAmount = items.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
 
-    const sale = await Sale.findByIdAndUpdate(
-      req.params.id,
-      {
-        client,
-        saleNumber,
-        saleDate,
-        items,
-        totalAmount,
-        saleType,
-        national,
-        currency,
-        comments,
-        location,
-      },
-      { new: true }
-    );
+    const sale = await Sale.findById(req.params.id);
 
     if (!sale) {
       return res.status(404).json({ msg: 'Venta no encontrada' });
+    }
+
+    sale.client = client;
+    sale.saleNumber = saleNumber;
+    sale.saleDate = saleDate;
+    sale.items = items;
+    sale.totalAmount = totalAmount;
+    sale.saleType = saleType;
+    sale.national = national;
+    sale.currency = currency;
+    sale.comments = comments;
+    sale.location = location;
+
+    await sale.save();
+
+    // If an order is linked, update the order's fulfillment status
+    if (sale.order) {
+      const orderToUpdate = await Order.findById(sale.order).populate('items.product');
+      if (orderToUpdate) {
+        // Determine fulfillment status
+        const fulfillmentStatus = determineFulfillmentStatus(orderToUpdate.items, sale.items);
+        orderToUpdate.fulfillmentStatus = fulfillmentStatus; // 'Completo' or 'Parcial'
+
+        await orderToUpdate.save();
+      }
     }
 
     res.json({ msg: 'Venta actualizada exitosamente', sale });
@@ -164,15 +171,48 @@ router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
 // Delete a sale
 router.delete('/:id', requireAuth, checkRole(['admin']), async (req, res) => {
   try {
-    const sale = await Sale.findByIdAndDelete(req.params.id);
+    const sale = await Sale.findById(req.params.id);
+
     if (!sale) {
       return res.status(404).json({ msg: 'Venta no encontrada' });
     }
+
+    // If sale is linked to an order, update the order
+    if (sale.order) {
+      const orderToUpdate = await Order.findById(sale.order);
+      if (orderToUpdate) {
+        orderToUpdate.status = 'Pendiente';
+        orderToUpdate.fulfillmentStatus = 'No Cumplido';
+        orderToUpdate.sale = null;
+        await orderToUpdate.save();
+      }
+    }
+
+    await sale.remove();
+
     res.json({ msg: 'Venta eliminada exitosamente' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Function to determine fulfillment status
+function determineFulfillmentStatus(orderItems, saleItems) {
+  let isComplete = true;
+
+  for (const orderItem of orderItems) {
+    const saleItem = saleItems.find((sItem) => {
+      return sItem.product.toString() === orderItem.product._id.toString();
+    });
+
+    if (!saleItem || saleItem.quantity < orderItem.quantity) {
+      isComplete = false;
+      break;
+    }
+  }
+
+  return isComplete ? 'Completo' : 'Parcial';
+}
 
 // Record a payment on a sale
 router.post('/:id/payments', requireAuth, checkRole(['admin', 'user']), async (req, res) => {

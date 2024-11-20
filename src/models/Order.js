@@ -19,6 +19,7 @@ const OrderSchema = new mongoose.Schema(
     comments: { type: String },
     priority: { type: String, enum: ['Alta', 'Media', 'Baja'], default: 'Media' },
     status: { type: String, enum: ['Pendiente', 'Descartado', 'Completado'], default: 'Pendiente' },
+    fulfillmentStatus: { type: String, enum: ['Completo', 'Parcial', 'No Cumplido'], default: 'No Cumplido' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     sale: { type: mongoose.Schema.Types.ObjectId, ref: 'Sale' },
     currency: { type: String, enum: ['USD', 'MXN'], required: true },

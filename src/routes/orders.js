@@ -112,59 +112,78 @@ router.put('/:id', requireAuth, checkRole(['admin', 'user']), async (req, res) =
 
 // Create a sale from an order
 router.post('/:id/create-sale', requireAuth, checkRole(['admin', 'user']), async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id)
-      .populate('client')
-      .populate('items.product');
-
-    if (!order) {
-      return res.status(404).json({ msg: 'Pedido no encontrado' });
+    try {
+      const order = await Order.findById(req.params.id)
+        .populate('client')
+        .populate('items.product');
+  
+      if (!order) {
+        return res.status(404).json({ msg: 'Pedido no encontrado' });
+      }
+  
+      // Check if a sale has already been created from this order
+      if (order.sale) {
+        return res.status(400).json({ msg: 'Ya se ha creado una venta para este pedido' });
+      }
+  
+      // Create a new sale using the order details
+      const saleItems = order.items.map((item) => ({
+        product: item.product._id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      }));
+  
+      const totalAmount = saleItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
+  
+      const sale = new Sale({
+        client: order.client._id,
+        saleNumber: `VENTA-${Date.now()}`,
+        saleDate: new Date(),
+        items: saleItems,
+        totalAmount,
+        status: 'No Pagado',
+        saleType: 'Crédito', // Adjust as needed
+        national: true, // Adjust as needed
+        currency: order.currency,
+        comments: order.comments,
+        location: order.location,
+        createdBy: req.user._id,
+        order: order._id,
+      });
+  
+      await sale.save();
+  
+      // Update the order to link it to the sale and set the fulfillment status
+      order.sale = sale._id;
+      order.status = 'Completado';
+  
+      // Determine fulfillment status
+      const fulfillmentStatus = determineFulfillmentStatus(order.items, sale.items);
+      order.fulfillmentStatus = fulfillmentStatus; // 'Completo' or 'Parcial'
+  
+      await order.save();
+  
+      res.status(201).json({ msg: 'Venta creada exitosamente a partir del pedido', sale });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-
-    // Check if a sale has already been created from this order
-    if (order.sale) {
-      return res.status(400).json({ msg: 'Ya se ha creado una venta para este pedido' });
-    }
-
-    // Create a new sale using the order details
-    const saleItems = order.items.map((item) => ({
-      product: item.product._id,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-    }));
-
-    const totalAmount = saleItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
-
-    const sale = new Sale({
-      client: order.client._id,
-      saleNumber: `VENTA-${Date.now()}`,
-      saleDate: new Date(),
-      items: saleItems,
-      totalAmount,
-      status: 'No Pagado',
-      saleType: 'Crédito', // Adjust as needed
-      national: true, // Adjust as needed
-      currency: order.currency,
-      comments: order.comments,
-      location: order.location,
-      createdBy: req.user._id,
-      order: order._id,
+  });
+  
+  // Function to determine fulfillment status
+  function determineFulfillmentStatus(orderItems, saleItems) {
+    let isComplete = true;
+  
+    orderItems.forEach((orderItem) => {
+      const saleItem = saleItems.find((sItem) => sItem.product.equals(orderItem.product._id));
+  
+      if (!saleItem || saleItem.quantity < orderItem.quantity) {
+        isComplete = false;
+      }
     });
-
-    await sale.save();
-
-    // Update the order to link it to the sale
-    order.sale = sale._id;
-    order.status = 'Completado';
-    await order.save();
-
-    res.status(201).json({ msg: 'Venta creada exitosamente a partir del pedido', sale });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  
+    return isComplete ? 'Completo' : 'Parcial';
   }
-});
-
 
 // Delete an order
 router.delete('/:id', requireAuth, checkRole(['admin']), async (req, res) => {
