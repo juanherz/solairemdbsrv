@@ -206,7 +206,7 @@ router.put('/edit-user/:id', requireAuth, checkRole(['admin']), async (req, res)
 });
 
 // Route to get all users
-router.get('/users', requireAuth, checkRole(['admin']), async (req, res) => {
+router.get('/users', requireAuth, checkRole(['admin','user']), async (req, res) => {
   try {
     const users = await User.find().select('displayName email phoneNumber address country state city zipCode photoURL isVerified status company role _id');
     res.json(users);

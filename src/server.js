@@ -40,6 +40,9 @@ app.use('/api/products', productsRoutes);
 const ordersRoutes = require('./routes/orders');
 app.use('/api/orders', ordersRoutes);
 
+const calendarRoutes = require('./routes/calendar');
+app.use('/api/calendar', calendarRoutes);
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
