@@ -33,7 +33,7 @@ router.get('/events', requireAuth, async (req, res) => {
 // Create a new event
 router.post('/events/new', requireAuth, async (req, res) => {
   try {
-    const { title, description, start, end, allDay, textColor, users } = req.body;
+    const { title, description, start, end, allDay, textColor, users, category } = req.body;
 
     const event = new Event({
       title,
@@ -44,6 +44,7 @@ router.post('/events/new', requireAuth, async (req, res) => {
       textColor,
       createdBy: req.user._id,
       users,
+      category,
     });
 
     await event.save();

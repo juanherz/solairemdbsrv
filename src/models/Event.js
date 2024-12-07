@@ -11,6 +11,11 @@ const EventSchema = new mongoose.Schema({
   textColor: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], 
+  category: {
+    type: String,
+    enum: ['Trabajo', 'Personal', 'Urgente', 'Otro'],
+    default: 'Trabajo'
+  },
 });
 
 module.exports = mongoose.model('Event', EventSchema);
